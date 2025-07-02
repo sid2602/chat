@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 interface Message {
   id: number;
   room_id: number;
-  sender_type: 'user' | 'bot';
+  sender_type: 'user' | 'assistant';
   content: string;
   timestamp: string;
 }
@@ -24,8 +24,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, chatbotEndpointUrl }) =
   useEffect(() => {
     if (roomId) {
       fetchMessages();
-      const interval = setInterval(fetchMessages, 2000);
-      return () => clearInterval(interval);
     } else {
       setMessages([]);
     }
@@ -48,22 +46,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, chatbotEndpointUrl }) =
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sender_type: 'user', content: input }),
     });
+
     setInput('');
     await fetchMessages();
-    // If chatbot endpoint is set, send message to chatbot and store response
+    // // If chatbot endpoint is set, send message to chatbot and store response
     if (chatbotEndpointUrl) {
       try {
+
+
         const botRes = await fetch(chatbotEndpointUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: input }),
+          body: JSON.stringify({ messages: messages.map(msg => ({ role: msg.sender_type, content: msg.content })) }),
         });
         const botData = await botRes.json();
-        if (botData && botData.reply) {
+
+        if (botData) {
           await fetch(`/api/rooms/${roomId}/messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sender_type: 'bot', content: botData.reply }),
+            body: JSON.stringify({ sender_type: 'assistant', content: botData[botData.length - 1].content }),
           });
           await fetchMessages();
         }

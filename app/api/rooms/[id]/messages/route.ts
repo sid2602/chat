@@ -23,12 +23,25 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (isNaN(roomId)) {
       return NextResponse.json({ error: 'Invalid room id' }, { status: 400 });
     }
+
+    // const endpoint = db.prepare('SELECT chatbot_endpoint_url FROM rooms WHERE id = ?').get(roomId);
+    // if (!endpoint) {
+    //   return NextResponse.json({ error: 'Chatbot endpoint not found' }, { status: 404 });
+    // }
+
+    
+    // console.log("ENDPOINT", chatbot_endpoint_url);
+    // const response = await fetch(endpoint.chatbot_endpoint_url, {
+    //   method: 'POST',
+    // });
+
     const { sender_type, content } = await req.json();
     if (!sender_type || !content) {
       return NextResponse.json({ error: 'sender_type and content are required' }, { status: 400 });
     }
     const stmt = db.prepare('INSERT INTO messages (room_id, sender_type, content) VALUES (?, ?, ?)');
     const info = stmt.run(roomId, sender_type, content);
+
     const message = db.prepare('SELECT id, room_id, sender_type, content, timestamp FROM messages WHERE id = ?').get(info.lastInsertRowid);
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {
